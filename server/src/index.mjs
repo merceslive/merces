@@ -558,6 +558,7 @@ http.createServer((req, res) => {
     startTelegram({
       token: env.TELEGRAM_BOT_TOKEN, groupId: env.TELEGRAM_GROUP_ID || '', api: `http://127.0.0.1:${PORT}`,
       stateDir: STATE, site: env.PUBLIC_URL || 'https://merces.live', hub: HUB, explorer: 'https://robinhoodchain.blockscout.com',
+      welcome: env.TELEGRAM_WELCOME === 'on',
     });
   }
 });

@@ -10,7 +10,7 @@ import path from 'node:path';
 const ADDR_RE = /0x[a-fA-F0-9]{40}/g;
 const REPO_RE = /^(?:https?:\/\/(?:www\.)?github\.com\/)?([A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100})\/?$/;
 
-export function startTelegram({ token, groupId, api, stateDir, site, hub, explorer }) {
+export function startTelegram({ token, groupId, api, stateDir, site, hub, explorer, welcome = false }) {
   const T = `https://api.telegram.org/bot${token}`;
   const FILE = path.join(stateDir, 'telegram.json');
   const st = Object.assign({ offset: 0, seenAt: 0, watch: {}, caPosted: null, lastFeePost: {} }, readJson(FILE));
@@ -85,12 +85,27 @@ export function startTelegram({ token, groupId, api, stateDir, site, hub, explor
     save();
     return say(chat, on ? `Watching ${repoLink(m[1])}. You get a message when fees land in its vault, a coin launches for it, or it pays out.` : `Stopped watching ${esc(m[1])}.`);
   }
+  async function cmdTop(chat) {
+    const list = await get('/api/vaults');
+    if (!list.length) return say(chat, 'No vault holds fees yet. The first coin launched for a repo starts filling its vault.');
+    return say(chat, ['<b>Fullest vaults</b>', ...list.slice(0, 8).map((v, i) => `${i + 1}. ${repoLink(v.repo)}: ${eth(BigInt(v.stats?.pending || 0) + BigInt(v.stats?.unswept || 0))} ETH waiting${v.stats?.wallet ? ' · claimed' : ''}`)].join('\n'));
+  }
+  async function cmdNew(chat) {
+    const list = await get('/api/coins');
+    if (!list.length) return say(chat, `No coins yet. Launch the first one for a repo you rely on: ${site}/#/launch`);
+    return say(chat, ['<b>New coins</b>', ...list.slice(0, 8).map((c) => `$${esc(c.symbol)} pays ${repoLink(c.repo)} · <a href="https://www.ponsfamily.com/launchpad/${c.token}">Pons</a>`)].join('\n'));
+  }
+  const repoArg = (arg) => (arg || '').trim().match(REPO_RE)?.[1];
+  const cmdLaunch = (chat, arg) => { const r = repoArg(arg); return say(chat, r ? `Launch a coin that pays ${repoLink(r)}: ${site}/#/launch?repo=${encodeURIComponent(r)}` : `Launch a coin for any public repo: ${site}/#/launch`); };
+  const cmdClaim = (chat, arg) => { const r = repoArg(arg); return say(chat, r ? `Maintainer of ${repoLink(r)}? Open its vault here: ${site}/#/claim?repo=${encodeURIComponent(r)}` : `Maintain a repo? Commit <code>merces=0xYourWallet</code> to <code>.merces</code> on the default branch, then claim: ${site}/#/claim`); };
   const help = () => [
     '<b>Merces Live</b>: payday for open source, live from Robinhood Chain.',
     '',
     '/vault owner/repo · what a repo\'s vault holds',
     '/live · the latest trades and what they paid repos',
     '/stats · totals across Merces',
+    '/top · fullest vaults · /new · newest coins',
+    '/launch owner/repo · /claim owner/repo · links straight to the site',
     '/watch owner/repo · private alerts for a repo (/unwatch to stop)',
     '/ca · the official $WAGE contract address',
     '/verify · how to check everything on chain',
@@ -120,6 +135,16 @@ export function startTelegram({ token, groupId, api, stateDir, site, hub, explor
     if (!msg || !msg.chat) return;
     const isPrivate = msg.chat.type === 'private';
     if (!isPrivate && !groupChatId && msg.chat.username?.toLowerCase() === 'mercesdotlive') groupChatId = msg.chat.id;
+    if (!isPrivate && (msg.new_chat_members || msg.left_chat_member)) {
+      // Keep the group clean: join/leave notices go, and (once switched on) a short welcome that removes itself.
+      await tg('deleteMessage', { chat_id: msg.chat.id, message_id: msg.message_id }).catch(() => {});
+      if (welcome && msg.new_chat_members?.some((u) => !u.is_bot)) {
+        const names = msg.new_chat_members.filter((u) => !u.is_bot).map((u) => esc(u.first_name)).join(', ');
+        const w = await say(msg.chat.id, `Welcome, ${names}. Merces pays open source: coins for GitHub repos, fees to their vaults. Try /vault owner/repo or /live. The only $WAGE CA is the one I post here.`).catch(() => null);
+        if (w) setTimeout(() => tg('deleteMessage', { chat_id: msg.chat.id, message_id: w.message_id }).catch(() => {}), 120_000);
+      }
+      return;
+    }
     const text = msg.text || '';
     const m = text.match(/^\/([a-z]+)(?:@\w+)?\s*(.*)$/is);
     if (m) {
@@ -128,6 +153,7 @@ export function startTelegram({ token, groupId, api, stateDir, site, hub, explor
       const run = {
         start: () => say(chat, help()), help: () => say(chat, help()), vault: () => cmdVault(chat, arg), live: () => cmdLive(chat),
         stats: () => cmdStats(chat), ca: () => cmdCa(chat), verify: () => cmdVerify(chat),
+        top: () => cmdTop(chat), new: () => cmdNew(chat), launch: () => cmdLaunch(chat, arg), claim: () => cmdClaim(chat, arg),
         watch: () => cmdWatch(chat, arg, isPrivate, true), unwatch: () => cmdWatch(chat, arg, isPrivate, false),
       }[cmd.toLowerCase()];
       if (run) return run().catch((e) => say(chat, `Could not do that right now: ${esc(e.message)}`).catch(() => {}));
