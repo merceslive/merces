@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Merces · Payday for open source</title>
+  <meta name="description" content="Launch a coin for any public GitHub repo on Robinhood Chain. Its creator fees fill the repo's glass vault, and only someone who can push to the repo can open it." />
+  <link rel="canonical" href="https://merces.live/" />
+  <meta name="theme-color" content="#07080A" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Merces" />
+  <meta property="og:url" content="https://merces.live/" />
+  <meta property="og:title" content="Merces · Payday for open source" />
+  <meta property="og:description" content="Every public repo gets a glass vault. Coins fill it. Only the repo can open it." />
+  <meta property="og:image" content="https://merces.live/og.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://merces.live/og.png" />
+  <link rel="preload" href="/vault-still.jpg" as="image" fetchpriority="high" />
+  <link rel="preload" href="/fonts/panchang-800-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/general-sans-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="/fonts/general-sans-500-normal.woff2" as="font" type="font/woff2" crossorigin />
+  <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"WebApplication","name":"Merces","url":"https://merces.live/","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"A launchpad on Robinhood Chain that pays open source: each coin's creator fees go to the vault of a GitHub repo, claimable only by someone with push access to that repo."}
+  </script>
+  <script src="/config.js"></script>
+</head>
+<body>
+  <a class="skip" href="#app">Skip to content</a>
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <img id="still" src="/vault-still.jpg" alt="" aria-hidden="true" width="680" height="900" fetchpriority="high" />
+
+  <header class="top">
+    <a class="mark" href="#/" aria-label="Merces, home">MERCES</a>
+    <nav class="nav" aria-label="Main">
+      <a href="#/live" data-nav="live"><span data-roll>Live</span></a>
+      <a href="#/explore" data-nav="explore"><span data-roll>Explore</span></a>
+      <a href="#/launch" data-nav="launch"><span data-roll>Launch</span></a>
+      <a href="#/claim" data-nav="claim"><span data-roll>Claim</span></a>
+      <a href="#/docs" data-nav="docs"><span data-roll>Docs</span></a>
+    </nav>
+    <div class="top-right">
+      <a class="icon" id="gh-link" href="#" target="_blank" rel="noopener" aria-label="Merces on GitHub" hidden><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.93.36.31.68.92.68 1.86v2.76c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg></a>
+      <a class="icon" id="x-link" href="#" target="_blank" rel="noopener" aria-label="Merces on X"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M17.75 3h3.07l-6.7 7.66L22 21h-6.17l-4.83-6.32L5.47 21H2.4l7.17-8.2L2 3h6.33l4.37 5.77L17.75 3Zm-1.08 16.2h1.7L7.4 4.73H5.58L16.67 19.2Z"/></svg></a>
+      <div class="buy">
+        <button class="ca" id="buy" type="button" aria-expanded="false" aria-controls="buy-menu"><span data-roll>Buy $WAGE</span></button>
+        <div class="buy-menu" id="buy-menu" hidden></div>
+      </div>
+      <button class="pill pill-sm pill-ghost" id="connect" type="button"><span data-roll>Connect</span></button>
+      <a class="pill pill-sm" href="#/launch" id="open-app"><span data-roll>Open app</span></a>
+    </div>
+  </header>
+
+  <main id="app" tabindex="-1">
+    <section class="hero">
+      <h1 class="display">Payday for open source.</h1>
+      <p class="lede">Launch a coin for any public GitHub repo. Its creator fees fill that repo's glass vault, and only someone who can push to the repo can open it.</p>
+    </section>
+    <section class="band">
+      <h2>How it works</h2>
+      <p>Merces is a launchpad on Robinhood Chain. You name a public GitHub repo and launch a coin for it on Pons. The coin's creator fee recipient is the repo's vault, a contract whose address is fixed by the repo's name, so it can receive fees before anyone has heard of Merces. The launcher's wallet is never in the path.</p>
+      <p>Every buy and sell adds the creator tax and the creator share of the Pons fee to that vault. A maintainer claims by committing one line, merces=0xTheirWallet, to a .merces file on the default branch. The Merces verifier reads it through the GitHub API, and one transaction opens the vault and pays out everything inside. After that, anyone can push new fees to the same wallet.</p>
+      <h2>Why glass</h2>
+      <p>Fees never pass through a Merces wallet. Each vault has no owner and can only pay the wallet its repo named. Anyone can read every vault on chain, every number on the site has a public endpoint, and Merces takes no cut.</p>
+      <p>$WAGE is the coin of Merces itself. It launches on Pons on 21 November 2026 at 15:00 UTC. Nothing on this site promises a return on any coin.</p>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="foot-row">
+      <p class="foot-line">Fees go to the repo, never to the launcher. Built on Robinhood Chain, launched on Pons.</p>
+      <nav class="foot-links" aria-label="Footer">
+        <a href="#/docs">Docs</a>
+        <a href="#/verify">Verify</a>
+        <a href="#/token" id="foot-token">$WAGE</a>
+        <a href="#/community">Community</a>
+        <a href="#/roadmap">Roadmap</a>
+        <a id="foot-x" href="#" target="_blank" rel="noopener">X</a>
+        <a id="foot-hub" href="#/docs">Hub contract</a>
+        <a href="https://ponsfamily.com/launchpad" target="_blank" rel="noopener">Pons</a>
+      </nav>
+    </div>
+    <p class="foot-mark" aria-hidden="true">MERCES</p>
+  </footer>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

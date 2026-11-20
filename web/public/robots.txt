@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://merces.live/sitemap.xml

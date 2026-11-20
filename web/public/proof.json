@@ -1,0 +1,44 @@
+{
+  "name": "Merces",
+  "site": "https://merces.live",
+  "chain": {
+    "name": "Robinhood Chain",
+    "id": 4663
+  },
+  "contracts": {
+    "RepoHub": "0xdfB1Dc4ea18CFE83Cd47530D4b7b936d44cfdcB4",
+    "note": "deployed 20 Nov 2026, block 118911629, tx 0x9b007d71603810d903bf3573e976c78e0a2732ee127cc025c5f4b398a5975f24",
+    "ponsFeeEscrow": "0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e",
+    "ponsFactory": "0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e"
+  },
+  "mercesCutBps": 0,
+  "tests": {
+    "unit": {
+      "count": 19,
+      "passing": 19
+    },
+    "mainnetFork": {
+      "count": 1,
+      "passing": 1,
+      "what": "launch a coin paying an undeployed vault, trade, claim; maintainer receives creator tax + creator share of the Pons fee exactly"
+    }
+  },
+  "audit": {
+    "external": false,
+    "internalReview": "findings fixed before deploy"
+  },
+  "endpoints": [
+    "/api/stats",
+    "/api/events",
+    "/api/vaults",
+    "/api/coins",
+    "/api/repo?repo=owner/name"
+  ],
+  "proofFile": {
+    "paths": [
+      ".merces",
+      ".github/merces"
+    ],
+    "line": "merces=0xYourWallet"
+  }
+}

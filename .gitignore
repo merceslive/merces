@@ -1,0 +1,11 @@
+.keys/
+state/
+node_modules/
+dist/
+contracts/out/
+contracts/cache/
+contracts/lib/
+contracts/broadcast/
+.DS_Store
+.env
+*.key
