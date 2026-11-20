@@ -5,7 +5,7 @@ window.MERCES = {
   launchUtc: '2026-11-21T15:00:00Z',
   publicUrl: 'https://merces.live',
   x: 'https://x.com/mercesdotlive',
-  github: '',
+  github: 'https://github.com/rollycall/merces',
   dexscreener: 'https://dexscreener.com/robinhood/{token}',
   proofKey: 'merces',
   chainId: 4663,
