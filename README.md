@@ -2,7 +2,7 @@
 
 **Payday for open source.** Launch a coin for any public GitHub repo on Robinhood Chain. Its creator fees fill that repo's vault, and only someone who can push to the repo can open it.
 
-Live at **[merces.live](https://merces.live)** · X [@mercesdotlive](https://x.com/mercesdotlive)
+Live at **[merces.live](https://merces.live)** · X [@mercesdotlive](https://x.com/mercesdotlive) · Telegram [t.me/mercesdotlive](https://t.me/mercesdotlive) · bot [@merceslivebot](https://t.me/merceslivebot)
 
 ## How it works
 
@@ -39,7 +39,7 @@ cast call 0xdfB1Dc4ea18CFE83Cd47530D4b7b936d44cfdcB4 "vaultFor(string)(address)"
 | Folder | What |
 |---|---|
 | `contracts/` | `RepoHub.sol`, `RepoVault.sol` (Foundry). 19 unit tests + 1 mainnet-fork test against the real Pons V2 contracts |
-| `server/` | Node + viem: GitHub verifier (`/api/attest`), coin registry, live trade tape (`/api/live`), stats, RPC proxy |
+| `server/` | Node + viem: GitHub verifier (`/api/attest`), coin registry, live trade tape (`/api/live`, every CurveBuy/CurveSell and the creator tax it sent to a repo), stats, RPC proxy, and the Telegram bot (`telegram.mjs`: /vault, /live, /stats, /watch, group feed, anti-clone) |
 | `web/` | Vite + vanilla JS + three.js: the site at merces.live |
 
 ```bash

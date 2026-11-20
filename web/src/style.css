@@ -427,3 +427,4 @@ html.inner #still, html.gl-dim #still { opacity: .14; }
 @media (min-width: 861px) { .live-page .page-head, .live-top, .live-grid { max-width: min(1100px, 58vw); } .live-grid { grid-template-columns: 1fr; gap: 40px; } }
 .live-top { grid-template-columns: minmax(0, 1.7fr) minmax(0, .6fr) minmax(0, 1fr); }
 .live-top > div:not(.live-big) b { font-size: clamp(1.4rem, .7rem + 1.5vw, 2.4rem); }
+@media (max-width: 860px) { #tg-link { display: none; } }

@@ -116,13 +116,14 @@ function header() {
     ? `<a href="${ponsUrl(token.ca)}" target="_blank" rel="noopener">Buy on Pons</a>
        <a href="${C.dexscreener.replace('{token}', token.ca)}" target="_blank" rel="noopener">Chart on DexScreener</a>
        <div class="buy-ca"><span class="mono">${short(token.ca)}</span><button type="button" data-copy="${token.ca}" data-copy-label="Contract address copied">Copy CA</button></div>
-       <p>Only trust the CA posted here and on our X account.</p>`
+       <p>Only trust the CA posted here, on our X and in our Telegram.</p>`
     : `<p><b>$${C.ticker}</b> launches on Pons${Number.isFinite(LAUNCH) ? ` on <b>${launchLong()}</b>` : ''}.</p>
        <p>The contract address appears here at launch. Until then, anything claiming to be $${C.ticker} is not.</p>
        <a href="#/token">What $${C.ticker} is</a>`;
   $('#connect').innerHTML = `<span data-roll>${W.account ? short(W.account) : 'Connect'}</span>`;
   $('#connect').setAttribute('aria-label', W.account ? `Connected wallet ${W.account}` : 'Connect wallet');
   $('#x-link').href = C.x; $('#foot-x').href = C.x;
+  if (C.telegram) $('#tg-link').href = C.telegram;
   if (C.github) { $('#gh-link').href = C.github; $('#gh-link').hidden = false; }
   if (hubAddr) { $('#foot-hub').href = exp('address', hubAddr); $('#foot-hub').target = '_blank'; $('#foot-hub').rel = 'noopener'; }
   const chip = $('#ca-chip');
@@ -702,10 +703,11 @@ function communityPage() {
     <ul>
       <li>Website: <a href="${C.publicUrl}">${C.publicUrl.replace('https://', '')}</a></li>
       <li>X: <a href="${C.x}" target="_blank" rel="noopener">${C.x.replace('https://x.com/', '@')}</a></li>
+      ${C.telegram ? `<li>Telegram: <a href="${C.telegram}" target="_blank" rel="noopener">${C.telegram.replace('https://', '')}</a></li>` : ''}
     </ul>
     <h2 data-pour>The $${C.ticker} contract address</h2>
     <div class="row" data-pour>${caChip()}</div>
-    <p>It is posted here and on our X account at launch, nowhere else. A different address is a copy.</p>
+    <p>It is posted here, on our X account and in our Telegram at launch, nowhere else. A different address is a copy.</p>
     <h2 data-pour>We never</h2>
     <ul>
       <li>send you a message first;</li>

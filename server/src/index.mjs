@@ -10,6 +10,7 @@ import {
   parseAbi, parseAbiItem,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
+import { startTelegram } from './telegram.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const env = process.env;
@@ -427,7 +428,18 @@ async function route(req, res) {
     if (info.private) return send(res, 400, { error: 'Private repos are not supported' });
     const key = repoKey(repo);
     const list = coins.filter((c) => c.key === key);
-    return send(res, 200, { ...info, repo, key, coins: list.map((c) => ({ token: c.token, curve: c.curve, poolId: c.poolId, symbol: c.symbol })), sweep: sweepTargets(key), stats: repoStats.get(key) || null });
+    let vault = null;
+    if (HUB) {
+      // The vault as the chain sees it right now (used by the site lookup and the Telegram bot).
+      const [address, pending, paid, wallet] = await Promise.all([
+        client.readContract({ address: HUB, abi: hubAbi, functionName: 'vaultFor', args: [repo] }),
+        client.readContract({ address: HUB, abi: hubAbi, functionName: 'pendingOf', args: [key] }),
+        client.readContract({ address: HUB, abi: hubAbi, functionName: 'paidOf', args: [key] }),
+        client.readContract({ address: HUB, abi: hubAbi, functionName: 'walletOf', args: [key] }),
+      ]).catch(() => [null, 0n, 0n, null]);
+      vault = address ? { address, pending: String(pending), paid: String(paid), claimed: !!wallet && !/^0x0+$/.test(wallet) } : null;
+    }
+    return send(res, 200, { ...info, repo, key, vault, coins: list.map((c) => ({ token: c.token, curve: c.curve, poolId: c.poolId, symbol: c.symbol })), sweep: sweepTargets(key), stats: repoStats.get(key) || null });
   }
 
   if (p === '/api/attest' && req.method === 'POST') {
@@ -542,4 +554,10 @@ http.createServer((req, res) => {
   console.log(`merces server :${PORT} hub=${HUB} signer=${signer?.address || 'none'} rpc=${RPC_URL}`);
   loop();
   liveLoop();
+  if (env.TELEGRAM_BOT_TOKEN) {
+    startTelegram({
+      token: env.TELEGRAM_BOT_TOKEN, groupId: env.TELEGRAM_GROUP_ID || '', api: `http://127.0.0.1:${PORT}`,
+      stateDir: STATE, site: env.PUBLIC_URL || 'https://merces.live', hub: HUB, explorer: 'https://robinhoodchain.blockscout.com',
+    });
+  }
 });
