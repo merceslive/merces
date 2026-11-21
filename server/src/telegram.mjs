@@ -10,7 +10,7 @@ import path from 'node:path';
 const ADDR_RE = /0x[a-fA-F0-9]{40}/g;
 const REPO_RE = /^(?:https?:\/\/(?:www\.)?github\.com\/)?([A-Za-z0-9-]{1,39}\/[A-Za-z0-9._-]{1,100})\/?$/;
 
-export function startTelegram({ token, groupId, api, stateDir, site, hub, explorer, welcome = false }) {
+export function startTelegram({ token, groupId, api, stateDir, site, hub, explorer, welcome = false, launchUtc = '' }) {
   const T = `https://api.telegram.org/bot${token}`;
   const FILE = path.join(stateDir, 'telegram.json');
   const st = Object.assign({ offset: 0, seenAt: 0, watch: {}, caPosted: null, lastFeePost: {} }, readJson(FILE));
@@ -101,6 +101,7 @@ export function startTelegram({ token, groupId, api, stateDir, site, hub, explor
   const help = () => [
     '<b>Merces Live</b>: payday for open source, live from Robinhood Chain.',
     '',
+    'Type any <code>owner/repo</code> (or a GitHub link) to see its vault.',
     '/vault owner/repo · what a repo\'s vault holds',
     '/live · the latest trades and what they paid repos',
     '/stats · totals across Merces',
@@ -140,7 +141,7 @@ export function startTelegram({ token, groupId, api, stateDir, site, hub, explor
       await tg('deleteMessage', { chat_id: msg.chat.id, message_id: msg.message_id }).catch(() => {});
       if (welcome && msg.new_chat_members?.some((u) => !u.is_bot)) {
         const names = msg.new_chat_members.filter((u) => !u.is_bot).map((u) => esc(u.first_name)).join(', ');
-        const w = await say(msg.chat.id, `Welcome, ${names}. Merces pays open source: coins for GitHub repos, fees to their vaults. Try /vault owner/repo or /live. The only $WAGE CA is the one I post here.`).catch(() => null);
+        const w = await say(msg.chat.id, `Welcome, ${names}. Merces pays open source: coins for GitHub repos, fees to their vaults. Type any owner/repo to see its vault, or /live. The only $WAGE CA is the one I post here.`).catch(() => null);
         if (w) setTimeout(() => tg('deleteMessage', { chat_id: msg.chat.id, message_id: w.message_id }).catch(() => {}), 120_000);
       }
       return;
@@ -160,6 +161,59 @@ export function startTelegram({ token, groupId, api, stateDir, site, hub, explor
       return;
     }
     if (!isPrivate) await guard(msg).catch((e) => console.error('tg guard', e.message));
+    await autoReply(msg, isPrivate).catch((e) => console.error('tg auto', e.message));
+  }
+
+  // ------------------------------------------------------------------ auto replies: name a repo -> its vault; common questions
+  const lastAuto = {};
+  const FAQ = [
+    { k: 'ca', re: /\b(ca|contract( address)?|token address)\b|\bwhat'?s the (ca|address)\b/i, run: (c) => cmdCa(c) },
+    { k: 'when', re: /\b(when|what time)\b.*\b(launch|live|start|wage)\b|\blaunch time\b|\bwen\b/i,
+      run: (c) => say(c, `<b>$WAGE</b> launches on Pons on 21 November 2026, 15:00 UTC (<a href="https://www.timeanddate.com/worldclock/fixedtime.html?iso=20261121T1500">your time</a>). The CA is posted here by me at that minute.`) },
+    { k: 'what', re: /\b(what is|what's|how does|how do(es)?) (merces|this|it) (work|do)?\b|\bhow (it|this|merces) works?\b/i,
+      run: (c) => say(c, `Merces pays open source. Launch a coin for any public GitHub repo on ${site.replace('https://', '')}; its creator fees go to that repo's vault, not to the launcher. Only someone with push access to the repo can open it. Type a repo here, like <code>neovim/neovim</code>, to see its vault.`) },
+    { k: 'claim', re: /\b(how (do i|to|can i) claim|maintainer|my repo|own a repo|open (the|my) vault)\b/i, run: (c) => cmdClaim(c, '') },
+    { k: 'safe', re: /\b(rug|scam|safe|audit(ed)?|trust)\b/i,
+      run: (c) => say(c, `No cut and no owner on the vaults: fees can only go to the wallet a repo names in its own <code>.merces</code> file. The hub is Sourcify verified and a verifier change waits 3 days on chain. It is not externally audited. Check it yourself: ${site}/#/verify`) },
+  ];
+  async function autoReply(msg, isPrivate) {
+    const text = (msg.text || '').trim();
+    if (!text || text.startsWith('/') || msg.from?.is_bot) return;
+    const chat = msg.chat.id;
+    // A message that is only a repo (owner/repo or a github.com link) gets that repo's vault: the group's "name a repo".
+    const repo = text.match(REPO_RE);
+    if (repo && /\//.test(text) && text.split(/\s+/).length === 1) {
+      const key = `${chat}:repo:${repo[1].toLowerCase()}`;
+      if (Date.now() - (lastAuto[key] || 0) < 60_000) return;
+      lastAuto[key] = Date.now();
+      return cmdVault(chat, repo[1]);
+    }
+    if (text.length > 200) return;
+    const hit = FAQ.find((f) => f.re.test(text));
+    if (!hit) return;
+    const key = `${chat}:${hit.k}`;
+    if (!isPrivate && Date.now() - (lastAuto[key] || 0) < 3 * 60_000) return; // once per topic per 3 min in the group
+    lastAuto[key] = Date.now();
+    return hit.run(chat, msg.message_id);
+  }
+
+  // ------------------------------------------------------------------ countdown to $WAGE in the group (only while the CA is not out)
+  const LAUNCH = Date.parse(launchUtc || '2026-11-21T15:00:00Z');
+  const MARKS = [[360, '6 hours'], [180, '3 hours'], [60, '1 hour'], [30, '30 minutes'], [10, '10 minutes']];
+  async function countdown() {
+    try {
+      if (!groupChatId || !LAUNCH) return;
+      st.countdown = st.countdown || [];
+      const left = (LAUNCH - Date.now()) / 60_000;
+      for (const [min, label] of MARKS) {
+        if (st.countdown.includes(min) || left > min || left < min - 5) continue;
+        const t = await get('/api/token').catch(() => ({}));
+        if (t.ca) return;
+        await say(groupChatId, `<b>$WAGE in ${label}</b> · Pons · 15:00 UTC.\nThe CA comes from me, here, at that minute. Anything earlier is not $WAGE.\nMeanwhile: type any <code>owner/repo</code> to see what its vault holds, or open ${site}/#/live`);
+        st.countdown.push(min); save();
+      }
+    } catch (e) { console.error('tg countdown', e.message); }
+    finally { setTimeout(countdown, 60_000); }
   }
   async function poll() {
     try {
@@ -210,6 +264,7 @@ export function startTelegram({ token, groupId, api, stateDir, site, hub, explor
     console.log(`telegram @${me.username} group=${groupChatId}`);
     poll();
     feed();
+    countdown();
   })();
 }
 
